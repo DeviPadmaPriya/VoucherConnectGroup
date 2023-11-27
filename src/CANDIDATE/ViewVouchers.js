@@ -170,7 +170,7 @@ const ViewVouchers = () => {
                                         // Loading indicator when data is still being fetched
                                         <StyledTableRow>
                                             <TableCell colSpan={7} className="table-cell">
-                                                Loading..
+                                                Loading Data..
                                             </TableCell>
                                         </StyledTableRow>
                                     ) : (
