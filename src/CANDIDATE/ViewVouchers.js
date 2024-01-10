@@ -30,19 +30,19 @@ import {  useNavigate } from 'react-router-dom';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import axios from 'axios';
-
-// Styled components for custom styling
+ 
 const StyledTableCell = styled(TableCell)(({ theme }) => ({
     [`&.${tableCellClasses.head}`]: {
         backgroundColor: theme.palette.primary.main,
         color: theme.palette.common.white,
         whiteSpace: 'nowrap',
     },
+ 
     [`&.${tableCellClasses.body}`]: {
         fontSize: 14,
     },
 }));
-
+ 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
     "&:nth-of-type(odd)": {
         backgroundColor: theme.palette.action.hover,
@@ -52,7 +52,7 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
     },
     height: "2px",
 }));
-
+ 
 const ViewVouchers = () => {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -66,92 +66,159 @@ const ViewVouchers = () => {
     const [rowsPerPage, setRowsPerPage] = useState(5);
     const obj = localStorage.getItem("userInfo");
     const { username } = JSON.parse(obj);
-
+ 
     const [isEditing, setIsEditing] = useState(-1);
     const [error, setError] = useState(null);
-
+ 
     useEffect(() => {
-        // Fetch vouchers data from the backend
         const fetchVouchers = async () => {
             try {
                 const response = await fetch(`http://localhost:8085/requests/${username}`);
                 const result = await response.json();
-                setData(result);
+
+                // Sort the data array by exam date
+                const sortedData = result.sort((a, b) => {
+                    const dateA = new Date(a.plannedExamDate);
+                    const dateB = new Date(b.plannedExamDate);
+                    return dateA - dateB;
+                });
+
+                setData(sortedData);
                 setLoading(false);
             } catch (error) {
                 console.error('Error fetching data:', error);
                 setLoading(false);
             }
         };
-
+ 
         fetchVouchers();
     }, []);
-
-    // Function to navigate to request voucher page
+ 
     const handleRequestVoucher = () => {
         navigate('/requestform', { state: { username } });
     };
-
-    // Function to handle editing of exam date
+    const [selectedIndexForDateEdit, setSelectedIndexForDateEdit] = useState(null);
+ 
     const handleEditExamDate = (index) => {
         setSelectedExamIndex(index);
+        setSelectedIndexForDateEdit(index);
         setEditDateModalOpen(true);
     };
-
-    // Function to handle editing of exam result
+ 
     const handleEditResult = (index) => {
-        // ... (continued in the next comment block)
+        const voucher = data[index];
+ 
+        if (!voucher.voucherCode) {
+            console.log('Voucher code is not available. Cannot edit result.');
+            setError('Voucher code is not available. Cannot edit result.');
+            return;
+        }
+ 
+        const currentDate = new Date();
+        const enabledDate = new Date(data[index].plannedExamDate);
+ 
+        if (currentDate >= enabledDate) {
+            setEditIndex(index);
+            setIsEditing(index);
+            setError(null);
+        } else {
+            console.log('Editing is not allowed before', enabledDate);
+            setError('Editing result is not allowed before the exam date.');
+        }
     };
-
-    // Function to handle date change in the edit exam date modal
+ 
     const handleDateChange = (date) => {
         setSelectedDate(date);
     };
-
-    // Function to save the edited exam date
+ 
     const handleSaveExamDate = async () => {
-        // ... (continued in the next comment block)
+        try {
+            const voucherToUpdate = data[selectedExamIndex];
+            if (!voucherToUpdate.voucherCode) {
+                throw new Error('Voucher code is not available. Cannot update exam date before receiving voucher code.');
+            }
+ 
+            const voucherCode = voucherToUpdate.voucherCode;
+            const formattedDate = selectedDate.toISOString().split('T')[0];
+ 
+            const response = await fetch(`http://localhost:8085/requests/updateExamDate/${voucherCode}/${formattedDate}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            });
+ 
+            if (response.ok) {
+                const updatedData = [...data];
+                updatedData[selectedExamIndex].plannedExamDate = formattedDate;
+                setData(updatedData);
+                setEditDateModalOpen(false);
+ 
+            } else {
+                console.error('Failed to update exam date:', response.status);
+                throw new Error('Failed to update exam date.');
+            }
+        } catch (error) {
+            console.error('Error updating exam date:', error.message);
+            setError(error.message);
+        }
     };
-
-    // Function to cancel the edit exam date modal
+ 
     const handleCancelEditDate = () => {
         setEditDateModalOpen(false);
         setSelectedExamIndex(null);
     };
-
-    // Function to save the edited exam result
+ 
     const handleSaveResult = async (index) => {
-        // ... (continued in the next comment block)
+        try {
+            const voucherToUpdate = data[index];
+            const updatedResult = data[index].examResult;
+ 
+            const response = await axios.put(`http://localhost:8085/requests/${voucherToUpdate.voucherCode}/${updatedResult}`);
+            console.log("code is", voucherToUpdate.voucherCode);
+            console.log(voucherToUpdate.examResult);
+            if (response.ok) {
+                const updatedData = [...data];
+                updatedData[index].examResult = updatedResult;
+                setData(updatedData);
+                setError(null);
+            } else {
+                console.error('Failed to update result');
+            }
+        } catch (error) {
+            console.error('Error updating result:', error);
+        }
+        finally {
+            window.location.reload();  
+              }
     };
-
-    // Function to handle page change in the pagination
+ 
+ 
     const handleChangePage = (event, newPage) => {
         setPage(newPage);
     };
-
-    // Function to handle rows per page change in the pagination
+ 
     const handleChangeRowsPerPage = (event) => {
         setRowsPerPage(parseInt(event.target.value, 10));
         setPage(0);
     };
-
+ 
+ 
+   
+ 
     return (
         <>
-            {/* Navigation bar component */}
             <Navbar />
-
             <div style={{ position: 'relative' }}>
-                {/* Request Voucher button */}
+ 
                 <Button onClick={handleRequestVoucher} variant="contained" color="success" style={{ position: 'absolute', top: '20px', left: '20px', marginTop: '-30px', zIndex: 1 }}>
                     Request Voucher
+ 
                 </Button>
-
-                {/* Vouchers table container */}
                 <div className="container" style={{ marginTop: '30px', paddingTop: '80px' }}>
                     <Box>
                         <TableContainer component={Paper}>
                             <Table aria-label="customized table" style={{ width: "70%", marginLeft: "2%" }}>
-                                {/* Table header */}
                                 <TableHead>
                                     <StyledTableRow>
                                         <StyledTableCell style={{ minWidth: '200px' }}>Exam Name</StyledTableCell>
@@ -163,25 +230,21 @@ const ViewVouchers = () => {
                                         <StyledTableCell style={{ minWidth: '200px' }}>Result</StyledTableCell>
                                     </StyledTableRow>
                                 </TableHead>
-
-                                {/* Table body */}
                                 <TableBody>
                                     {loading ? (
-                                        // Loading indicator when data is still being fetched
                                         <StyledTableRow>
                                             <TableCell colSpan={7} className="table-cell">
-                                                Loading Data..
+                                                Loading...
                                             </TableCell>
                                         </StyledTableRow>
                                     ) : (
-                                        // Render each row of data in the table
                                         data.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((voucher, index) => (
                                             <StyledTableRow key={index}>
                                                 <StyledTableCell >{voucher.cloudExam}</StyledTableCell>
                                                 <StyledTableCell >{voucher.cloudPlatform}</StyledTableCell>
-                                                <StyledTableCell>{voucher.voucherCode ?? 'Pending'}</StyledTableCell>
-                                                <StyledTableCell >{voucher.voucherIssueLocalDate ? voucher.voucherIssueLocalDate : 'Pending'}</StyledTableCell>
-                                                <StyledTableCell >{voucher.voucherExpiryLocalDate ? voucher.voucherExpiryLocalDate : 'Pending'}</StyledTableCell>
+                                                <StyledTableCell>{voucher.voucherCode ?? 'Requested'}</StyledTableCell>
+                                                <StyledTableCell >{voucher.voucherIssueLocalDate ? voucher.voucherIssueLocalDate : 'Requested'}</StyledTableCell>
+                                                <StyledTableCell >{voucher.voucherExpiryLocalDate ? voucher.voucherExpiryLocalDate : 'Requested'}</StyledTableCell>
                                                 <StyledTableCell >
                                                     {voucher.plannedExamDate}
                                                     <IconButton onClick={() => handleEditExamDate(index)}>
@@ -189,15 +252,44 @@ const ViewVouchers = () => {
                                                     </IconButton>
                                                 </StyledTableCell>
                                                 <StyledTableCell className="table-cell">
-                                                    {/* ... (continued in the next comment block) */}
+                                                    {editIndex === index ? (
+                                                        <Select
+                                                            value={voucher.examResult}
+                                                            onChange={(e) => {
+                                                                const newData = [...data];
+                                                                newData[index].examResult = e.target.value;
+                                                                setData(newData);
+                                                            }}
+                                                        >
+                                                            {resultOptions.map((option, optionIndex) => (
+                                                                <MenuItem key={optionIndex} value={option}>
+                                                                    {option}
+                                                                </MenuItem>
+                                                            ))}
+                                                        </Select>
+                                                    ) : (
+                                                        voucher.examResult
+                                                    )}
+                                                    {isEditing === index ? (
+                                                        <>
+                                                            <IconButton onClick={() => handleSaveResult(index)}>
+                                                                <SaveIcon />
+                                                            </IconButton>
+ 
+                                                        </>
+                                                    ) : (
+                                                        <IconButton onClick={() => handleEditResult(index)}>
+                                                            <EditIcon />
+                                                        </IconButton>
+                                                    )}
+ 
+ 
                                                 </StyledTableCell>
                                             </StyledTableRow>
                                         ))
                                     )}
                                 </TableBody>
                             </Table>
-
-                            {/* Table pagination */}
                             <TablePagination style={{ width: "70%", marginLeft: "2%" }}
                                 rowsPerPageOptions={[5, 10, 25, { label: 'All', value: data.length }]}
                                 component="div"
@@ -211,28 +303,27 @@ const ViewVouchers = () => {
                         </TableContainer>
                     </Box>
                 </div>
-
-                {/* Edit Exam Date modal */}
                 <Dialog open={isEditDateModalOpen} onClose={handleCancelEditDate}>
                     <DialogTitle>Edit Exam Date</DialogTitle>
                     <DialogContent sx={{ width: '300px', height: '300px' }}>
-                        {/* Date picker for selecting a new exam date */}
                         <DatePicker
                             selected={selectedDate}
                             onChange={handleDateChange}
                             dateFormat="yyyy-MM-dd"
                             utcOffset={0}
                             minDate={new Date()}
+                            maxDate={
+                                data[selectedIndexForDateEdit]?.voucherExpiryLocalDate
+                                    ? new Date(data[selectedIndexForDateEdit].voucherExpiryLocalDate)
+                                    : null
+                            }
                         />
                     </DialogContent>
                     <DialogActions>
-                        {/* Save and cancel buttons for the edit exam date modal */}
                         <Button onClick={handleSaveExamDate}>Save</Button>
                         <Button onClick={handleCancelEditDate}>Cancel</Button>
                     </DialogActions>
                 </Dialog>
-
-                {/* Error notification */}
                 {error && (
                     <Snackbar
                         open={!!error}
@@ -255,5 +346,5 @@ const ViewVouchers = () => {
         </>
     );
 };
-
+ 
 export default ViewVouchers;
