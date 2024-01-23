@@ -12,9 +12,6 @@ import React, { useState, useEffect } from 'react';
 import NotFound from './COMMON/404Page';
 
 
-
-
-
 function App() {
   
   const { isLoggedIn,roles } = useSelector((state) => state.auth.value);
