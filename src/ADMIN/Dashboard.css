@@ -57,9 +57,9 @@ p {
   /* margin: 75px 0px 100px 200px; */
   margin-top: 10px;
   margin-bottom: 1px;
-  margin-left: 250px;
+  margin-left: 200px;
   display: flex;
-  width: 1000px;
+  width: 83%;
   align-items: center;
   font-weight: bold;
   color: black;
@@ -211,7 +211,7 @@ button {
 }
 
 .right-corner {
-  margin-left: 380px;
+  margin-left: 350px;
   display: flex;
   flex-direction: row;
 }

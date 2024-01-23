@@ -21,7 +21,7 @@ const UserProfile = () => {
     <div style={{ textAlign: 'center', padding: '20px' }}>
       <Avatar
         alt="Profile"
-        style={{ width: '100px', height: '100px', marginBottom: '10px', marginLeft: '70px' }}
+        style={{ width: '100px', height: '100px', marginBottom: '10px', marginLeft: '120px' }}
       >
         {name.charAt(0)}
       </Avatar>

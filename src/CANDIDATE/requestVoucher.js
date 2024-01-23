@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import {
   TextField,
@@ -39,6 +39,17 @@ const RequestVoucherForm = () => {
   const username = location.state?.username || '';
   const [formErrors, setFormErrors] = useState({});
   const [examOptions, setExamOptions] = useState([]);
+  
+  useEffect(() => {
+    const obj = localStorage.getItem("userInfo");
+    const { name } = JSON.parse(obj);
+    setFormData((prevFormData) => ({
+      ...prevFormData,
+      candidateName: name,
+    }));
+  }, []);
+  
+  
   const handleChange = (event) => {
     const { name, value,files} = event.target;
     if (name === 'doSelectScoreImage') {
@@ -124,7 +135,7 @@ const RequestVoucherForm = () => {
       }
       else if(doSelectScore <80){
         errorsCopy.doSelectScore =
-          'score less than 80 is not eligible for the exam';
+          'Since ur score is less than 80 ur not eligible for the exam';
       }
         else {
           errorsCopy.doSelectScore = '';
@@ -178,7 +189,6 @@ const RequestVoucherForm = () => {
  
   const handleSubmit = (event) => {
     event.preventDefault();
-   
     if(validateForm()){
         if (formData.doSelectScore >= 80) {
                 const dataWithUserEmail = {
@@ -225,25 +235,17 @@ const RequestVoucherForm = () => {
   };
   const handleCloseDialog = () => {
     setOpenDialog(false);
-    setFormData({
-      candidateName: '',
-      cloudPlatform: '',
-      cloudExam: '',
-      doSelectScore: '',
-      doSelectScoreImage: null,
-      plannedExamDate: '',
-    });
-    setFormErrors({});
-    document.getElementById('fileInput').value = '';
   };
  
   const goBack = () => {
     navigate(-1); // This function navigates back to the previous page in history
   };
  
+ 
   return (
     <div >
       <Navbar/>
+      {/* This is Go Back Button */}
       <Button
         onClick={goBack}
         sx={{
@@ -273,13 +275,11 @@ const RequestVoucherForm = () => {
             size="sl"
             margin="normal">
             <TextField
-                label="Candidate Name"
-                name="candidateName"
-                value={formData.candidateName}
-                onChange={handleNameChange}
-                error={!!formErrors.candidateName}
-                helperText={formErrors.candidateName}
-            />
+            label="Candidate Name"
+            name="candidateName"
+            value={formData.candidateName}
+            disabled // Disable the text field
+          />
         </FormControl>
         <FormControl className='form-control-data' variant="outlined" size="sl" margin="normal">
             <InputLabel id="name-select-label">Cloud Name</InputLabel>

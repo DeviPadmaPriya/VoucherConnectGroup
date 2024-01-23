@@ -19,7 +19,7 @@ import {
   faBell,
   faArrowLeft,
   faClipboardCheck,
-  faUser,
+  faChartPie,
   faTachometerAlt,
   faCog
 } from "@fortawesome/free-solid-svg-icons";
@@ -453,6 +453,7 @@ function VoucherDashboard() {
         <hr />
 
         <div className="row">
+        
           <div className="left-row">
             <p><Link to='/dashboard' style={{ "color": "white" }}>
               <FontAwesomeIcon icon={faTachometerAlt} size="1x" /> Dashboard</Link></p>
